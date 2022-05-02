@@ -1,0 +1,35 @@
+# The melting code should do something like that:
+
+# Used to be part of .loadKdTable
+filename<-choose.files(caption = "Select Kd file",multi = FALSE)
+kd<-read.table(filename,sep="\t")
+kd.full<-as.matrix(kd)
+
+# New
+kd.ppx<-ppxCleanKdTable(kd=kd.full,ppxPhases=properPhases)
+
+## All of the above used to be .loadKdTable(), that wrote global var.
+
+# Somewhere in the inner loop
+....
+BatchPM(kd=kd.ppx,c0= ... ,pm = ... ,min.props = ...)
+# The other arguments cmins, melt.arg and dont are not used in this specific function
+# used to be .BatchPM(kd,c0,pm,min.props,melt.arg)
+# calling a global kd table
+# So not much change here
+....
+
+....
+kd.zrn<-rbind(kd.ppx,kd.full["Zrn",colnames(kd.ppx)])
+melt.arg<-list(mjrs = ...,
+               trc = ...,
+               TT = ...)
+correctZrnSat(c0 = ..., kd = kd.zrn,
+                pm = ... ,min.props = ...,
+                melt.arg=melt.arg)
+# cmins, dont not used
+# was .correctZrnSat(c0,cL,cmins,kd,pm,min.props,melt.arg,dont=character(0))
+
+
+
+
