@@ -2,7 +2,7 @@
 % Please edit documentation in R/GCDmodel.R
 \name{correctZrnSat}
 \alias{correctZrnSat}
-\title{Correction for zircon saturation, Watson & Harrison 1983}
+\title{Correction for zircon saturation.}
 \usage{
 correctZrnSat(
   kd,
@@ -51,5 +51,5 @@ list containing the following slots:
 }
 }
 \description{
-Correction for zircon saturation, Watson & Harrison 1983
+Correction for zircon saturation.
 }

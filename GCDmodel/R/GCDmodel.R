@@ -14,7 +14,7 @@
     on.exit(options("show.error.messages"=TRUE))
     options("warn"=-1)
 
-    packageStartupMessage("GCDmodel module - 0.5.01", appendLF = TRUE)
+    packageStartupMessage("GCDmodel module - 0.5.03", appendLF = TRUE)
 
     # If we do not have access to GCDkit functions, redefine them here
     if(!exists("millications")){
@@ -331,7 +331,7 @@ BatchPM<-function(kd,c0,pm,cmins=matrix(),min.props,melt.arg=list(),dont=charact
 
 correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(0),SatModel="Boehnke"){
 
-  #' Correction for zircon saturation, Watson & Harrison 1983
+  #' Correction for zircon saturation.
   #' @param kd Named matrix. Partition coefficients. Must include Zircon (Zrn)
   #' @param pm Scalar. Degree of partial melting (0-100)
   #' @param cmins Matrix. Composition of minerals (not used, for consistency)
@@ -367,7 +367,7 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
 
   milcats <- millications(melt.arg$mjrs)
   # Prevent against various forms of Fe
-  .cleanMillicats(milcats)
+  milcats <- .cleanMillicats(milcats)
 
   # Model selector
   if(SatModel=="Boehnke"){
@@ -770,14 +770,16 @@ correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=charact
   #' @return a VECTOR with no empty element, and (possibly) normalized to the desired value
 
   # Convert one-line matrix to vector
-  if(class(obj)=="matrix"){
+ # if(class(obj)=="matrix"){
+  if(is.matrix(obj)){
     nn<-colnames(obj)
     obj<-as.vector(obj)
     names(obj)<-nn
   }
 
   # Idem for data.frame
-  if(class(obj)=="data.frame"){
+  # if(class(obj)=="data.frame"){
+  if(is.data.frame(obj)){
     nn<-colnames(obj)
     obj<-as.numeric(obj)
     names(obj)<-nn
@@ -826,7 +828,7 @@ correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=charact
 
 ###############################
 # Clean millications
-# GCDkit's function does not gurantee that all variants of Fr will be returned
+# GCDkit's function does not guarantee that all variants of Fe will be returned
 # (because GCDkit knows that WR is clean - we don't)
 ################################
 

@@ -1,7 +1,7 @@
 Package: GCDmodel
 Type: Package
 Title: Modelling routines for GCDkit
-Version: 0.5.01
+Version: 0.5.03
 Author: Jean-François Moyen
 Maintainer: Jean-François Moyen <jfmoyen@gmail.com>
 Description: A set of routines to calculate major and trace elements models
@@ -10,4 +10,4 @@ Description: A set of routines to calculate major and trace elements models
 License: CC
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
