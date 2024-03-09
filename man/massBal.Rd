@@ -5,7 +5,7 @@
 \title{Check whether a model honours mass balance constrains
 (for debugging purposes...)}
 \usage{
-massBal(model, elt, tol = 1e-06)
+massBal(model, elt, tol = 0.000001)
 }
 \arguments{
 \item{elt}{Character. The (trace) element to check mass balance for}

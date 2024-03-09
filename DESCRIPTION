@@ -1,7 +1,7 @@
 Package: GCDmodel
 Type: Package
 Title: Modelling routines for GCDkit
-Version: 0.5.9
+Version: 0.6.0
 Author: Jean-François Moyen
 Maintainer: Jean-François Moyen <jfmoyen@gmail.com>
 Description: A set of routines to calculate major and trace elements models

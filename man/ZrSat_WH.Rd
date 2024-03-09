@@ -7,11 +7,16 @@ Return (1) the [Zr] of a saturated liquid, at a given T;
 (2) the T saturation, at a given [Zr].
 If T, or [Zr], is not supplied, the resulting value will be NULL}
 \usage{
-ZrSat_WH(WR, TK = NULL, Zr = NULL)
+ZrSat_WH(WR, milli = NULL, TK = NULL, Zr = NULL, ...)
 }
 \arguments{
 \item{WR}{a data.frame or a matrix containing major element wt%
 (it should have only numeric values)}
+
+\item{milli}{a data.frame containing millications.
+If supplied, it will be used and WR ignored.}
+
+\item{...}{not used, will be silently ignored, but allows a consistent UI for all ZrSat_* functions}
 
 \item{TK:}{the temperature (in K)}
 

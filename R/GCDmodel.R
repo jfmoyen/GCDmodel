@@ -201,8 +201,8 @@ BatchPM<-function(kd,c0,pm,cmins=matrix(),min.props,melt.arg=list(),dont=charact
   invisible(list(c0=c0,cL=.sanitize(cL),cmins=cmins,cS=cS,min.props=min.props,FF=pm,kd=kd,DD=.sanitize(DD)))
 }
 
-correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(0),SatModel="Boehnke"){
-
+correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(0),
+                        SatModel="Boehnke",SatArgs=list()){
   #' Correction for zircon saturation.
   #' @param kd Named matrix. Partition coefficients. Must include Zircon (Zrn)
   #' @param pm Scalar. Degree of partial melting (0-100)
@@ -210,8 +210,9 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
   #' @param min.props Named vector. Mineral proportions (normalized to 1)
   #' @param melt.arg List. Further useful arguments.
   #' Includes here the melt major elements (melt.arg$mjrs),trace (melt.arg$trc), temperature in KELVIN (melt.arg$TT)
-  #' @param dont Character vector. Do not calculate for these elements. Use to avoid overptinting previous saturation calc (i.e. if you use a saturation routine /after/ this one, )
-  #' @param SatModel model to use Currently "Boehnke" (the default; Boehnke et al. 2013) or "WH" (Watson & Harrison 1983)
+  #' @param dont Character vector. Do not calculate for these elements. Use to avoid overprinting previous saturation calc (i.e. if you use a saturation routine /after/ this one, )
+  #' @param SatModel model to use. If the model uses more than TK, you also need to pass SatArgs
+  #' @param SatArgs saturation arguments. A list, for instance for Crisp: list(H2O= .. ,Pbar= ..)
   #' @return list containing the following slots:
   #' \itemize{
   #'   \item \code{c0} Named vector. Composition of the source, as passed to the function
@@ -229,6 +230,10 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
   #'   \item \code{o.used} Real. Amount of O2 used to form ZrSiO4, and thus technically not available to major phases (wt %)
   #'   \item \code{sat} Named vectors. Saturation parameters
   #' }
+  #' @details Saturation models: the code will look for a function called ZrSat_<SatModel>. If this function returns a data.frame
+  #' with the first two columns called Zr.sat and T.Zrsat, it will work. Implemented so far:
+  #' Boehnke (the default; Boehnke et al. 2013), WH (Watson & Harrison 1983) and Crisp (Crist and Berry, 2022).
+  #' The corresponding functions are ZrSat_WH, ZrSat_Boehnke and ZrSat_Crisp.
   #' @export
 
   c0<-.sanitize(c0)
@@ -237,23 +242,36 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
   # Protection against Matt converting oxides to upper case !!
   names(melt.arg$mjrs)<-.TrueNames(names(melt.arg$mjrs))
 
-  milcats <- millications(melt.arg$mjrs)
-  # Prevent against various forms of Fe
-  milcats <- .cleanMillicats(milcats)
+ # milcats <- millications(melt.arg$mjrs) ####
+ #
+ #  # Call saturation routine
+ #
+ #  # Prevent against various forms of Fe
+ #    milcats <- .cleanMillicats(milcats) ####
+# Now done in M...
 
-  # Model selector
-  if(SatModel=="Boehnke"){
-    zrSatName <- "Zr.sat (Boehnke)"
-    ZrTName <- "TZr.sat.C (Boehnke)"
-  }else{
-    zrSatName <- "Zr.sat"
-    ZrTName <- "TZr.sat.C"
-  }
-  # call Saturation plugin, Zr just an arbitrary value as it is not needed
-  sat.data <- zrSaturation(milcats,T=melt.arg$TT-273.15,Zr=melt.arg$trc["Zr"])
-  Zr.sat <- sat.data[zrSatName]
-  Zr.T <- sat.data[ZrTName]
-  M <- sat.data["M"]
+  # Call saturation model
+
+  zrsat <- do.call(what = paste("ZrSat_",SatModel,sep=""),
+                  args = c(list(WR=melt.arg$mjrs,TK=melt.arg$TT),SatArgs) )
+
+  Zr.sat <- zrsat$Zr.sat
+  Zr.T <- zrsat$TZr.sat
+  extra.sat <- zrsat[-c(1:2)]
+
+  # # Model selector
+  # if(SatModel=="Boehnke"){
+  #   zrSatName <- "Zr.sat (Boehnke)"
+  #   ZrTName <- "TZr.sat.C (Boehnke)"
+  # }else{
+  #   zrSatName <- "Zr.sat"
+  #   ZrTName <- "TZr.sat.C"
+  # }
+  # # call Saturation plugin, Zr just an arbitrary value as it is not needed
+  # sat.data <- zrSaturation(milcats,T=melt.arg$TT-273.15,Zr=melt.arg$trc["Zr"])
+  # xZr.sat <- sat.data[zrSatName]
+  # xZr.T <- sat.data[ZrTName]
+  # xM <- sat.data["M"]
 
   # Housekeeping
   all.but.zrn <- rownames(cmins)
@@ -288,6 +306,7 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
     cZr <- kd[all.but.zrn,"Zr"] * Zr.sat
 
     # So we now now the mass of Zr that goes to each phase
+
     zr.mass<-c(cZr,Zr.sat)*mass/1e6
 
     # Zr mass balance
@@ -373,19 +392,21 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
  # si.used<-zrc.prop*327765/1e4 # in wt% of whole system
   # ZrSiO4 = 597644 ppm of Zr, 327765 ppm of SiO2, 174570 ppm of O2
 
-  invisible(list(c0=c0,cL=.sanitize(cL),
+  invisible(c(list(c0=c0,cL=.sanitize(cL),
                  cmins=cm,
                  cS=cS,
                  min.props=m.pr,
                  FF=pm,
                  kd=kd,
                  DD=.sanitize(DD),
-                   dont=dont,
+                 dont=dont,
                  tot.mass=tot.mass,
                  corr.masses=mass,
                  si.used=si.used,
                  o.used=o.used,
-                 sat=c(M,Zr.sat,Zr.T)))
+                 Zr.sat = Zr.sat,
+                 Zr.T = Zr.T),
+                 extra.sat))
 
 }
 
@@ -589,7 +610,8 @@ correctMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
 }
 
 
-correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(0)){
+correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(0),
+                           zrSatModel="Boehnke",zrSatArgs=list()){
   #' @export
 
   zz<-correctZrnSat(kd=kd,
@@ -597,7 +619,8 @@ correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=charact
                     pm=pm,
                     min.props=min.props,
                     melt.arg=melt.arg,
-                    cmins=cmins,dont=dont)
+                    cmins=cmins,dont=dont,
+                    zrSatModel=zrSatModel,zrSatArgs=zrSatArgs)
   mm<-correctMnzSat(kd=kd,
                     c0=c0,
                     pm=pm,
@@ -698,37 +721,7 @@ correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=charact
   return(ee)
 }
 
-###############################
-# Clean millications
-# GCDkit's function does not guarantee that all variants of Fe will be returned
-# (because GCDkit knows that WR is clean - we don't)
-################################
 
-.cleanMillicats<-function(milli){
-  # Make sure we have a matrix all the time
-  if(is.vector(milli)){
-    milli<-t(as.matrix(milli))
-    vec<-T
-  }else{
-    vec<-F
-  }
-
-  oxd<-colnames(milli)
-  if(!("FeOt" %in% oxd)){
-    # FeOt is missing, we must do something !
-    if(any(colnames(milli)=="FeO")){fe2<-milli[,"FeO"]}else{fe2<-0}
-    if(any(colnames(milli)=="Fe2O3")){fe3<-milli[,"Fe2O3"]}else{fe3<-0}
-    FeOt<-fe2+fe3
-    milli<-cbind(milli,FeOt)
-  }
-
-  # Return what we have been given...
-  if(vec){
-    milli<-milli[1,]
-  }
-
-  return(milli)
-}
 
 ###############################
 # A slightly modified version of Monazite sat, taking Th into account (and returning more info).

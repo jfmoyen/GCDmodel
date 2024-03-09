@@ -7,7 +7,7 @@
   on.exit(options("show.error.messages"=TRUE))
   options("warn"=-1)
 
-  packageStartupMessage("GCDmodel module - 0.5.9", appendLF = TRUE)
+  packageStartupMessage("GCDmodel module - 0.6.0", appendLF = TRUE)
 
   # If we do not have access to GCDkit functions, redefine them here
   #if(!exists("millications")){

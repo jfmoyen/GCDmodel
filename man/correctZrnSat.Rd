@@ -12,7 +12,8 @@ correctZrnSat(
   min.props,
   melt.arg = list(),
   dont = character(0),
-  SatModel = "Boehnke"
+  SatModel = "Boehnke",
+  SatArgs = list()
 )
 }
 \arguments{
@@ -27,9 +28,11 @@ correctZrnSat(
 \item{melt.arg}{List. Further useful arguments.
 Includes here the melt major elements (melt.arg$mjrs),trace (melt.arg$trc), temperature in KELVIN (melt.arg$TT)}
 
-\item{dont}{Character vector. Do not calculate for these elements. Use to avoid overptinting previous saturation calc (i.e. if you use a saturation routine /after/ this one, )}
+\item{dont}{Character vector. Do not calculate for these elements. Use to avoid overprinting previous saturation calc (i.e. if you use a saturation routine /after/ this one, )}
 
-\item{SatModel}{model to use Currently "Boehnke" (the default; Boehnke et al. 2013) or "WH" (Watson & Harrison 1983)}
+\item{SatModel}{model to use. If the model uses more than TK, you also need to pass SatArgs}
+
+\item{SatArgs}{saturation arguments. A list, for instance for Crisp: list(H2O= .. ,Pbar= ..)}
 }
 \value{
 list containing the following slots:
@@ -52,4 +55,10 @@ list containing the following slots:
 }
 \description{
 Correction for zircon saturation.
+}
+\details{
+Saturation models: the code will look for a function called ZrSat_<SatModel>. If this function returns a data.frame
+with the first two columns called Zr.sat and T.Zrsat, it will work. Implemented so far:
+Boehnke (the default; Boehnke et al. 2013), WH (Watson & Harrison 1983) and Crisp (Crist and Berry, 2022).
+The corresponding functions are ZrSat_WH, ZrSat_Boehnke and ZrSat_Crisp.
 }

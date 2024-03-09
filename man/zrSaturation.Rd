@@ -2,10 +2,19 @@
 % Please edit documentation in R/ZrSaturation.R
 \name{zrSaturation}
 \alias{zrSaturation}
-\title{Temporary placeholder}
+\title{An equivalent of GCDkit's version - returns the same values
+and takes the same arguments}
 \usage{
-zrSaturation(WR, T = 0, Zr = filterOut(WR, "Zr", 1))
+zrSaturation(cats = milli, T = 0, Zr = filterOut(WR, "Zr", 1))
+}
+\arguments{
+\item{T}{temperature for which one wishes to calculate (°C)}
+
+\item{Zr}{[Zr] concentration}
+
+\item{milli}{composition in millications}
 }
 \description{
-Temporary placeholder
+An equivalent of GCDkit's version - returns the same values
+and takes the same arguments
 }
