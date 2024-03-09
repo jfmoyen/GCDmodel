@@ -13,8 +13,6 @@ M_param <- function(cats){
   oxides<-c("SiO2","TiO2","Al2O3","FeOt",
             "MnO","MgO","CaO","Na2O","K2O","P2O5")
   cats<-cats[,intersect(oxides, colnames(cats)),drop=FALSE]
-  # oxides<-oxides[oxides%in%colnames(cats)]
-  # cats<-cats[,oxides,drop=FALSE]
 
   # Normalize to 1
   sums<-apply(cats,1,sum,na.rm=TRUE)
@@ -30,19 +28,115 @@ M_param <- function(cats){
   return(M)
   }
 
+Optical_basicity<-function(WR){
+  #' Optical basicity - the Lambda (Λ) parameter
+  #' used in Crisp et al. 2022
+  #' @param WR Whole rock composition
+  #' @value a data.frame, containing optBas (optical basicity) and xH2O components
 
-ZrSat_WH<-function(WR,TK=NULL,Zr=NULL){
+  # Create the table of values required by the model
+  oxides<-c("SiO2","TiO2","Al2O3","MgO",
+            "MnO","FeO","FeOt","Fe2O3","CaO",
+            "Na2O","K2O","P2O5","H2O")
+
+  cation.mass <- c(28.0855,47.867,26.981538,24.305,
+               54.938049,55.8457,55.8457,55.8457,40.078,
+               22.98977,39.0983,30.973761,1.00794)
+
+  cation.charge <- c(4,4,3,2,
+                     2,2,2,3,2,
+                     1,1,5,1)
+
+  nb.cations <- c(1,1,2,1,
+                  1,1,1,2,1,
+                  2,2,2,2)
+
+  nb.O <- c(2,2,3,1,
+            1,1,1,3,1,
+            1,1,5,1)
+
+  oxide.mass<-c(60.0843,79.8658,50.980638,40.3044,
+                70.937449,71.8451,71.8451,79.8448,56.0774,
+                30.98947,47.098,70.972261,9.00764)
+  # Nb per cation, so mass of AlO(3/2) for instance
+
+  opt.basicity <- c(0.48,0.75,0.60,0.78,
+                    0.96,1.00,1.00,0.77,1.00,
+                    1.15,1.40,0.33,0.40)
+  # Lebouteiller & Courtine 1998
+
+  lambdaParms <- rbind(cation.mass,cation.charge,nb.cations,nb.O,oxide.mass,opt.basicity)
+  colnames(lambdaParms) <- oxides
+
+  # Guarantee WR is a 2D structure (matrix or df)
+  if(is.vector(WR)){
+    WR <- t(as.matrix(WR))
+  }
+
+  # Filter to keep only the relevant ones
+ # cat("DEBUG: WR should be df or matrix")
+  oxList <- intersect(oxList,colnames(WR))
+  dry <- setdiff(oxList,"H2O")
+
+  WR<-WR[,oxList,drop=F]
+  lambdaParms <- lambdaParms[,oxList,drop=F]
+
+ # z <- t(WR)[,1]
+  # Inner function - do the calculation for 1 line
+  .optBas<-function(z){
+    # Normalize WR to 100%
+    z <- z/sum(z) * 100
+
+    # "Weight percent hydrous"
+    z1 <- z*lambdaParms["cation.mass",,drop=T] / lambdaParms["oxide.mass",,drop=T]
+    z1.O <- 100 - sum(z1)
+
+    # "Atomic percent hydrous"
+    s1 <- sum(z1 / lambdaParms["cation.mass",,drop=T]) + z1.O / 15.994
+    z2 <- z1 / lambdaParms["cation.mass",,drop=T] / s1 * 100
+
+    # "Mol fraction oxide"
+    s2 <- sum( z2 / lambdaParms["nb.cations",,drop=T])
+    z3 <- z2/s2 / lambdaParms["nb.cations",,drop=T]
+
+    # Optical basicity"
+    s3 <- sum(z3[dry] * lambdaParms["nb.O",dry,drop=T])
+    optBas <- sum( z3[dry] * lambdaParms["opt.basicity",dry,drop=T] * lambdaParms["nb.O",dry,drop=T]) / s3
+
+    # xH2O
+    xH2O <- z3["H2O"]
+
+    names(optBas)<-"optBas"
+    names(xH2O)<-"xH2O"
+    return(c(optBas,xH2O))
+  }
+
+  # Apply to the whole table
+  ee<-apply(WR,
+            1,
+            .optBas)
+
+  return(data.frame(t(ee)))
+
+}
+
+ZrSat_WH<-function(WR,milli=NULL,TK=NULL,Zr=NULL){
   #' Zr saturation, Watson & Harrison (1983)
   #' Return (1) the [Zr] of a saturated liquid, at a given T;
   #' (2) the T saturation, at a given [Zr].
   #' If T, or [Zr], is not supplied, the resulting value will be NULL
   #' @param WR a data.frame or a matrix containing major element wt%
   #' (it should have only numeric values)
+  #' @param milli a data.frame containing millications.
+  #' If supplied, it will be used and WR ignored.
   #' @param TK: the temperature (in K)
   #' @param Zr: [Zr] concentration (ppm)
-  #' @value A data.frame, containing M, Zr.sat_WH and T.Zrsat_WH
+  #' @value A data.frame, containing M, Zr.sat and T.Zrsat
 
-  milli <- millications(WR)
+  if(is.null(milli)){
+    milli <- millications(WR)
+  }
+
   M <- M_param(milli)
 
   # Temperature is known: return [Zr]sat
@@ -50,7 +144,7 @@ ZrSat_WH<-function(WR,TK=NULL,Zr=NULL){
     DZr<-exp(-3.8-0.85*(M-1)+12900/TK)
     Zr.sat<-497644/DZr
   }else{
-    Zr.sat <- NULL
+    Zr.sat <- NA
   }
 
   # [Zr] is known: return Tsat
@@ -59,27 +153,33 @@ ZrSat_WH<-function(WR,TK=NULL,Zr=NULL){
     DZr<-as.vector(DZr)
     TZr.sat<-12900/(log(DZr)+3.8+0.85*(M-1))
   }else{
-    TZr.sat<-NULL
+    TZr.sat<- NA
   }
 
-  return(data.frame(M=M,
-              Zr.sat_WH=Zr.sat,
-              TZr.sat_WH=TZr.sat ))
+  return(data.frame(
+              Zr.sat=Zr.sat,
+              TZr.sat=TZr.sat,
+              M=M))
   }
 
 
-ZrSat_Boehnke<-function(WR,TK=NULL,Zr=NULL){
+ZrSat_Boehnke<-function(WR,milli=NULL,TK=NULL,Zr=NULL){
   #' Zr saturation, Boehnke et al. (2013)
   #' Return (1) the [Zr] of a saturated liquid, at a given T;
   #' (2) the T saturation, at a given [Zr].
   #' If T, or [Zr], is not supplied, the resulting value will be NULL
   #' @param WR a data.frame or a matrix containing major element wt%
   #' (it should have only numeric values)
+  #' @param milli a data.frame containing millications.
+  #' If supplied, it will be used and WR ignored.
   #' @param TK: the temperature (in K)
   #' @param Zr: [Zr] concentration (ppm)
-  #' @value A data.frame, containing M, Zr.sat_Boehnke and T.Zrsat_Boenhke
+  #' @value A data.frame, containing M, Zr.sat and T.Zrsat
 
-  milli <- millications(WR)
+  if(is.null(milli)){
+    milli <- millications(WR)
+  }
+
   M <- M_param(milli)
 
   # Temperature is known: return [Zr]sat
@@ -87,7 +187,7 @@ ZrSat_Boehnke<-function(WR,TK=NULL,Zr=NULL){
     DZrB<-exp(10108/TK-1.16*(M-1)-1.48)
     Zr.sat<-497644/DZrB
   }else{
-    Zr.sat <- NULL
+    Zr.sat <- NA
   }
 
   # [Zr] is known: return Tsat
@@ -96,30 +196,152 @@ ZrSat_Boehnke<-function(WR,TK=NULL,Zr=NULL){
     DZrB<-as.vector(DZrB)
     TZr.sat<-10108/(log(DZrB)+1.16*(M-1)+1.48)
   }else{
-    TZr.sat<-NULL
+    TZr.sat<- NA
   }
 
-  return(data.frame(M=M,
-              Zr.sat_Boehnke=Zr.sat,
-              TZr.sat_Boehnke=TZr.sat ))
+  return(data.frame(
+              Zr.sat=Zr.sat,
+              TZr.sat=TZr.sat,
+              M=M))
 }
 
 
-zrSaturation<-function(WR,T=0,Zr=filterOut(WR,"Zr",1)){
-  #' Temporary placeholder
+ZrSat_Crisp<-function(WR,milli=NULL,TK=NULL,Pbar=NULL,Zr=NULL,H2O=NULL){
+  #' Zr saturation, Crisp & Berry (2022)
+  #' Return (1) the [Zr] of a saturated liquid, at a given T;
+  #' (2) the T saturation, at a given [Zr].
+  #' If T, or [Zr], is not supplied, the resulting value will be NULL
+  #' @param WR a data.frame or a matrix containing major element wt%
+  #' (it should have only numeric values)
+  #' @param TK: the temperature (in K)
+  #' @param Pbar: pressure (in bars). Note that Crisp uses GPa in the paper!
+  #' @param Zr: [Zr] concentration (ppm)
+  #' @param H2O water content (wt%). Will over-ride any version found in WR.
+  #' @value A data.frame, containing M, Zr.sat and T.Zrsat
 
-  WH <- ZrSat_WH(WR,TK=T,Zr)
-  Boehnke <- ZrSat_Boehnke(WR,TK=T,Zr)
+  if(is.matrix(WR)){WR <- as.data.frame(WR)}
+
+  # Add water, if required
+  if(!is.null(H2O)){
+      if(is.vector(WR)){
+        WR["H2O"]<-H2O
+      }else{
+        WR[,"H2O"]<-H2O
+      }
+  }
+
+  ee <- Optical_basicity(WR)
+  lambda <- ee$optBas
+  xH2O <- ee$xH2O
+  # Check
+
+  if(any(is.na(xH2O))){
+    cat("Warning: H2O is needed for saturation using Crisp's equation!\n")
+    }
+
+  if(is.null(Pbar)){
+    cat("Warning: P is needed for saturation using Crisp's equation!\n")
+    return(data.frame(
+                      Zr.sat=NA,
+                      TZr.sat=NA,
+                      lambda=lambda,
+                      xH2O=xH2O) )
+  }
+
+    # Temperature is known: return [Zr]sat
+  if(!is.null(TK)){
+    Zr.sat<-10^( 0.96 - 5790/TK - 1.28 * Pbar*1e-4 + 12.39 * lambda
+                 + 0.83 * xH2O + 2.06 * Pbar*1e-4 * lambda  )
+  }else{
+    Zr.sat <- NA
+  }
+
+  # [Zr] is known: return Tsat
+  if(!is.null(Zr)){
+    TZr.sat <-(5790/(0.96-(1.28*Pbar*1e-4)+(12.39*lambda)+(0.83*xH2O)+(2.06*Pbar*1e-4*lambda)-log10(Zr)))
+  }else{
+    TZr.sat<- NA
+  }
+
+  return(data.frame(
+                    Zr.sat=Zr.sat,
+                    TZr.sat=TZr.sat,
+                    lambda=lambda,
+                    xH2O=xH2O))
+}
+
+
+zrSaturation<-function(cats=milli,T=0,Zr=filterOut(WR,"Zr",1)){
+  #' An equivalent of GCDkit's version - returns the same values
+  #' and takes the same arguments
+  #' @param milli composition in millications
+  #' @param T temperature for which one wishes to calculate (°C)
+  #' @param Zr [Zr] concentration
+
+  WH <- ZrSat_WH(milli=cats,TK=T,Zr)
+  Boehnke <- ZrSat_Boehnke(milli=cats,TK=T,Zr)
 
   y <- cbind(WH$M,Zr,
-             round(WH$Zr.sat_WH,1),
-             round(WH$TZr.sat_WH-273.15,1),
-             round(Boehnke$Zr.sat_Boehnke,1),
-             round(Boehnke$TZr.sat_Boehnke-273.15,1)
+             round(WH$Zr.sat,1),
+             round(WH$TZr.sat-273.15,1),
+             round(Boehnke$Zr.sat,1),
+             round(Boehnke$TZr.sat-273.15,1)
              )
 
   # y<-cbind(M,Zr,round(Zr.sat,1),round(TZr.sat.C,1),
   #          round(Zr.satB,1),round(TZr.satB.C,1))
+  colnames(y)<-c("M","Zr.obs","Zr.sat","TZr.sat.C","Zr.sat (Boehnke)","TZr.sat.C (Boehnke)")
+  # if(nrow(y)>1) y<-formatResults(y) else rownames(y)<-rownames(cats)
+  # if(!getOption("gcd.shut.up"))print(y)
+  # assign("results",y,.GlobalEnv)
+  invisible(y[,-2])
+}
+
+zrSaturation.GCDkit<-function(cats=milli,T=0,Zr=filterOut(WR,"Zr",1)){
+  #' This is the original GCDkit saturation function, kept for reference
+
+  on.exit(options("show.error.messages"=TRUE))
+  # if(T==0){
+  #   T<-winDialogString("Temperature (degrees C)","750")
+  #   if(is.null(T)){cat("Cancelled.\n");options("show.error.messages"=FALSE);stop()}
+  # }
+
+  T<-as.numeric(T)+273.15
+  oxides<-c("SiO2","TiO2","Al2O3","FeOt","MnO","MgO","CaO","Na2O","K2O","P2O5")
+  oxides<-oxides[oxides%in%colnames(cats)]
+  cats<-cats[,oxides,drop=FALSE]
+  if(length(Zr)>1) cats[names(Zr),oxides]
+
+  # NEW
+  sums<-apply(cats,1,sum,na.rm=TRUE)
+  ee<-sapply(1:nrow(cats),function(i){
+    z<-cats[i,]/sums[i]
+    return(z)
+  })
+  cats<-t(ee)
+
+  #cats<-normalize2total(cats)/100
+
+  M<-(cats[,"Na2O"]+cats[,"K2O"]+2*cats[,"CaO"])/(cats[,"Al2O3"]*cats[,"SiO2"])
+
+  # Watson and Harrison (1983)
+  DZr<-exp(-3.8-0.85*(M-1)+12900/T)
+  Zr.sat<-497644/DZr
+
+  DZr<-497644/Zr
+  DZr<-as.vector(DZr)
+  TZr.sat.C<-12900/(log(DZr)+3.8+0.85*(M-1))-273.15
+
+  # Boehnke et al. (2013
+  DZrB<-exp(10108/T-1.16*(M-1)-1.48)
+  Zr.satB<-497644/DZrB
+
+  DZrB<-497644/Zr
+  DZrB<-as.vector(DZrB)
+  TZr.satB.C<-10108/(log(DZrB)+1.16*(M-1)+1.48)-273.15
+
+
+  y<-cbind(M,Zr,round(Zr.sat,1),round(TZr.sat.C,1),round(Zr.satB,1),round(TZr.satB.C,1))
   colnames(y)<-c("M","Zr.obs","Zr.sat","TZr.sat.C","Zr.sat (Boehnke)","TZr.sat.C (Boehnke)")
   # if(nrow(y)>1) y<-formatResults(y) else rownames(y)<-rownames(cats)
   # if(!getOption("gcd.shut.up"))print(y)

@@ -10,9 +10,9 @@
   packageStartupMessage("GCDmodel module - 0.5.9", appendLF = TRUE)
 
   # If we do not have access to GCDkit functions, redefine them here
-  if(!exists("millications")){
-
-    packageStartupMessage("GCDkit not available, redefining key functions",
+  #if(!exists("millications")){
+  if(! "GCDkit" %in% .packages() ){
+    packageStartupMessage("GCDkit not loaded, using local variant of millications",
                           appendLF = TRUE)
 
     ##Definitions, variables
