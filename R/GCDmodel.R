@@ -253,7 +253,7 @@ correctZrnSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=character(
   # Call saturation model
 
   zrsat <- do.call(what = paste("ZrSat_",SatModel,sep=""),
-                  args = c(list(WR=melt.arg$mjrs,TK=melt.arg$TT),SatArgs) )
+                  args = c(list(WR=melt.arg$mjrs,TK=melt.arg$TT,Zr=melt.arg$trc["Zr"]),SatArgs) )
 
   Zr.sat <- zrsat$Zr.sat
   Zr.T <- zrsat$TZr.sat
@@ -620,7 +620,7 @@ correctZrnMnzSat<-function(kd,c0,pm,cmins,min.props,melt.arg=list(),dont=charact
                     min.props=min.props,
                     melt.arg=melt.arg,
                     cmins=cmins,dont=dont,
-                    zrSatModel=zrSatModel,zrSatArgs=zrSatArgs)
+                    SatModel=zrSatModel,SatArgs=zrSatArgs)
   mm<-correctMnzSat(kd=kd,
                     c0=c0,
                     pm=pm,
