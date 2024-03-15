@@ -8,9 +8,20 @@ used in Crisp et al. 2022}
 Optical_basicity(WR)
 }
 \arguments{
-\item{WR}{Whole rock composition}
+\item{WR}{Whole rock composition. It can be supplied as matrix, df or (named) vector}
+}
+\value{
+a data.frame, containing optBas (optical basicity) and xH2O components
 }
 \description{
 Optical basicity - the Lambda (Λ) parameter
 used in Crisp et al. 2022
+}
+\details{
+Following the table in the paper by Crisp et al. 2022, Λ is calculated
+from WR oxides wt% using the following oxides (only): c("SiO2","TiO2","Al2O3","MgO",
+"MnO","FeO","FeOt","Fe2O3","CaO","Na2O","K2O","P2O5","H2O")
+Missing oxides will be silently ignored.
+Also, note that the parameter requires H2O. It has to be supplied as part of WR,
+as a column of that name.
 }

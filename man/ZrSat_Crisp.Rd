@@ -18,12 +18,11 @@ ZrSat_Crisp(
 )
 }
 \arguments{
-\item{WR}{a data.frame or a matrix containing major element wt%
-(it should have only numeric values)}
+\item{WR}{a data.frame, matrix or vector containing major element wt\%}
 
-\item{H2O}{water content (wt%). Will over-ride any version found in WR.}
+\item{H2O}{water content (wt\%). Will over-ride any version found in WR.}
 
-\item{...}{not used, will be silently ingored, but allows a consistent UI for all ZrSat_* functions}
+\item{...}{not used, will be silently ignored, but allows a consistent UI for all ZrSat_* functions}
 
 \item{TK:}{the temperature (in K)}
 
@@ -31,9 +30,23 @@ ZrSat_Crisp(
 
 \item{Zr:}{[Zr] concentration (ppm)}
 }
+\value{
+A data.frame, containing Zr.sat, T.Zrsat, lambda and xH2O
+}
 \description{
 Zr saturation, Crisp & Berry (2022)
 Return (1) the [Zr] of a saturated liquid, at a given T;
 (2) the T saturation, at a given [Zr].
 If T, or [Zr], is not supplied, the resulting value will be NULL
+}
+\details{
+Calculation done using Crisp and Berry equation. The lambda parameter is calculated
+from ancillary function Optical_basicity()
+If a T is supplied, the [Zr] saturation for this T is calculated.
+If a [Zr] is supplied, either explicitly (using parameter Zr= ...) or
+implicitly (in the WR table), a T saturation is calculated.
+If both are supplied, both are calculated!
+If H2O is explicitly supplied, it is used. Otherwise, the value(s) found in column
+H2O of WR. If H2O is not supplied it is assumed to be 0.
+Pressure (argument Pbar) is, on the other hand, mandatory and has no sensible defaults...
 }

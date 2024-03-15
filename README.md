@@ -8,6 +8,15 @@ The recommended way to install these is by using
 
 This will ensure that you get the most recent code. Alternately, go to the "release" section of this page and download the version appropriate for your system.
 
+# Version 0.7.0: 
+
+-   Not many visible (user-facing) changes, but under the hood, a lot of code restructuring.
+-   The GCDmodel version of `millications()` stops trying to emulate GCDkit and has been rewritten from scratch
+-   The `Zrsat_XXX` functions, as well as `GCDmodel::millications()` should now be able to digest WR or milli (respectively wt. pct oxides or millications) in all(?) sensible formats: data frame, matrix or (named) vector.
+-   Two global variables are now visible, `periodicTable` and `petroOxides`. `periodicTable`, from <https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee>, includes the atom mass and quite a few other properties
+for all atoms in the peridoic table. `petroOxides` includes oxide information (mass, nb of cations and anions...) 
+for commonly used oxides in petrology. They are exported and are visible with `GCDmodel::periodicTable` and `GCDmodel::petroOxides`
+
 # Version 0.6.0: 
 
 -   The saturation code for zircon has been modified. It does not use GCDkit code anymore, but internal versions - in file ZrSaturation.R

@@ -10,8 +10,7 @@ If T, or [Zr], is not supplied, the resulting value will be NULL}
 ZrSat_Boehnke(WR, milli = NULL, TK = NULL, Zr = NULL, ...)
 }
 \arguments{
-\item{WR}{a data.frame or a matrix containing major element wt%
-(it should have only numeric values)}
+\item{WR}{a data.frame, matrix or vector containing major element wt\%}
 
 \item{milli}{a data.frame containing millications.
 If supplied, it will be used and WR ignored.}
@@ -22,9 +21,20 @@ If supplied, it will be used and WR ignored.}
 
 \item{Zr:}{[Zr] concentration (ppm)}
 }
+\value{
+A data.frame, containing Zr.sat, T.Zrsat and M
+}
 \description{
 Zr saturation, Boehnke et al. (2013)
 Return (1) the [Zr] of a saturated liquid, at a given T;
 (2) the T saturation, at a given [Zr].
 If T, or [Zr], is not supplied, the resulting value will be NULL
+}
+\details{
+Calculation done using Boehnke equation. The M parameter is calculated
+from ancillary function M_param()
+If a T is supplied, the [Zr] saturation for this T is calculated.
+If a [Zr] is supplied, either explicitly (using parameter Zr= ...) or
+implicitly (in the WR table), a T saturation is calculated.
+If both are supplied, both are calculated!
 }

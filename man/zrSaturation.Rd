@@ -14,6 +14,9 @@ zrSaturation(cats = milli, T = 0, Zr = filterOut(WR, "Zr", 1))
 
 \item{milli}{composition in millications}
 }
+\value{
+A data frame with the same form of GCDkit::zrSaturation()
+}
 \description{
 An equivalent of GCDkit's version - returns the same values
 and takes the same arguments
