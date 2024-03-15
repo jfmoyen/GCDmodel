@@ -17,7 +17,7 @@
 #' A data frame with 22 rows and 6 columns.
 #' \describe{
 #'   \item{OxideName}{Full formula of the oxide}
-#'   \item{CationName}
+#'   \item{CationName}{}
 #'   \item{NbCations, NbO}{Number of cations and oxygen atoms in the oxide}
 #'   \item{CationMass}{Mass of the cation, taken from GCDmodel::periodicTable}
 #'   \item{OxideMass}{Mass of the oxide, calculated from the above data}

@@ -21,11 +21,11 @@ millications<-function(WR){
     WR <-  as.data.frame.list(WR)
   }
 
-  existingOxides <- intersect(rownames(petroOxides),names(WR))
+  existingOxides <- intersect(rownames(GCDmodel::petroOxides),names(WR))
 
   eee<-apply(WR[,existingOxides],
              MARGIN=1,
-             FUN = function(z){z / petroOxides[existingOxides,"OxideMass"] * petroOxides[existingOxides,"NbCations"] * 1000 } )
+             FUN = function(z){z / GCDmodel::petroOxides[existingOxides,"OxideMass"] * GCDmodel::petroOxides[existingOxides,"NbCations"] * 1000 } )
 
   milli <-data.frame(t(eee))
   milli[is.na(milli)] <- 0
